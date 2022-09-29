@@ -1,3 +1,17 @@
+"""
+Calculates total feedback values and loop weights for all fixed points of the system
+
+Requires csv files containing equilibrium densities at the fixed points
+
+- encroached_states_densities.csv
+- grassy_states_densities.csv
+- unstable_fixed_points.csv
+
+Output: One csv file for each fixed point, containg all total feedback values and loop weights
+
+"""
+
+
 #import modules
 from sympy import *
 import numpy as np
@@ -117,6 +131,42 @@ def find_savannah_loop_weights(A):
    
     return(results)
 
+
+def get_all_Fks(points_df, f_values):
+
+    "Calculates all total feedback values for a data frame of equilibrium densities"
+
+    nrows = points_df.shape[0]
+
+    all_Fks = []
+    all_loops = []
+
+    for f in f_values: #loop through the rows
+
+        #select all rows in df with fb value
+        row = points_df.loc[points_df['fb']==f]
+
+        #create dictionary
+        eq = {PH:float(row['PH']) , PS:float(row['PS']) , CB:float(row['CB']), CG:float(row['CG']), fb:f}
+
+        Jacobian= get_jacobian(diffs, eq)
+
+        F1, F2, F3, F4 = total_feedback(Jacobian)
+
+        loop_list = find_savannah_loop_weights(Jacobian)
+
+        all_Fks.append([F1, F2, F3, F4])
+        all_loops.append(loop_list)
+
+    #turn results into a dataframe
+    loop_names = ["a12a21", "a13a31","a14a41", "a23a32","a24a42","a21a42a14", "a41a24a12","a31a23a12", "a21a32a13","a41a24a32a13", "a31a23a42a14"]
+    all_Fks = pd.DataFrame(all_Fks, columns = ["F1", "F2", "F3", "F4"])
+    loops = pd.DataFrame(all_loops, columns = loop_names)
+
+    results = pd.concat([points_df, all_Fks, loops], axis = 1)
+
+    return results
+
 #----------------------------------------------------------------------
 #Define equations and parameters
 #---------------------------------------------------------------------
@@ -162,43 +212,6 @@ unstable_points = pd.read_csv("unstable_fixed_points.csv")
 
 f_values = np.array(unstable_points['fb'])
 
-
-#-------------------------------------------------------------------------------
-
-def get_all_Fks(points_df, f_values):
-    
-    "Calculates all total feedback values for a data frame of equilibrium densities"
-    
-    nrows = points_df.shape[0]
-    
-    all_Fks = []
-    all_loops = []
-    
-    for f in f_values: #loop through the rows
-        
-        #select all rows in df with fb value
-        row = points_df.loc[points_df['fb']==f]
-        
-        #create dictionary
-        eq = {PH:float(row['PH']) , PS:float(row['PS']) , CB:float(row['CB']), CG:float(row['CG']), fb:f}
-        
-        Jacobian= get_jacobian(diffs, eq)
-    
-        F1, F2, F3, F4 = total_feedback(Jacobian)
-        
-        loop_list = find_savannah_loop_weights(Jacobian)
-        
-        all_Fks.append([F1, F2, F3, F4])
-        all_loops.append(loop_list)
-        
-    #turn results into a dataframe
-    loop_names = ["a12a21", "a13a31","a14a41", "a23a32","a24a42","a21a42a14", "a41a24a12","a31a23a12", "a21a32a13","a41a24a32a13", "a31a23a42a14"]
-    all_Fks = pd.DataFrame(all_Fks, columns = ["F1", "F2", "F3", "F4"])
-    loops = pd.DataFrame(all_loops, columns = loop_names)
-    
-    results = pd.concat([points_df, all_Fks, loops], axis = 1)   
-    
-    return results
 #---------------------------------------------------------------------------------
 
 #calculate total feedback values

@@ -1,3 +1,16 @@
+"""
+Estimates equilibrium densities of the stable fixed points from numerical simulations
+
+Input:
+unstable_fixed_points.csv -> equilibrium densities of the unstable point, found with XPP Auto.
+Is used to get the same fb-values for the unstable point.
+
+Output: table of equilibrium densities.
+grassy_states_densities.csv
+encroached_states_densities.csv
+
+"""
+
 import numpy as np
 from scipy import integrate as integ
 import random as rd
@@ -49,7 +62,7 @@ def savannas(x, t, fb, fd, threshold = epsilon):
         PS = x[1]  #Producer 2 -> shrubs
         CB = x[2]  #Consumer 1 -> browsers 
         CG = x[3]  #Consumer 2 -> grazers 
-        
+
         #Functional responses 
         FHB = (a * PH * pHB)/(1 + a * h * PH * pHB)      #browsers eating grasses
         FHG = (a * PH * pHG)/(1 + a * h * PH * pHG)      #grazers eating grasses
