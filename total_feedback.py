@@ -65,6 +65,57 @@ def total_feedback(A):
     F4 = -charpoly[4]
     
     return F1, F2, F3, F4
+#----------------------------------------------------------------------
+def find_savannah_loop_weights(A):
+    
+    """
+    calculates the loop weights of all loops (n > 1) in the system  
+    """
+    
+    #----------------------------------------------
+    #2-link loops:
+    #a12a21: positive loop between grasses and shrubs
+    l2_1 = (A[1,0]*A[0,1])**(1/2)
+    
+    #a13a31: weak negative loop between grasses and browsers
+    l2_2 = (abs(A[0,2]*A[2,0]))**(1/2)
+    
+    #a14a41: strong negative loop between grasses and grazers
+    l2_3 = (abs(A[0,3]*A[3,0]))**(1/2)
+    
+    #a23a32: strong negative loop between shrubs and browsers
+    l2_4 = (abs(A[1,2]*A[2,1]))**(1/2)
+    
+    #a24a42: weak negative loop between shrubs and grasses
+    l2_5 = (abs(A[1,3]*A[3,1]))**(1/2)
+    
+    #----------------------------------------------
+    #3-link loops:
+    #grasses -> shrubs -> grazers -> grasses: a21a42a14
+    l3_1 = (A[1,0]*A[3,1]*A[0,3])**(1/3)
+    
+    #grasses -> grazers -> shrubs -> grasses: a41a24a21
+    l3_2 = (A[3,0]*A[1,3]*A[1,0])**(1/3)
+    
+    #grasses -> browsers -> shrubs -> grasses: a31a23a12
+    l3_3 = (A[2,0]*A[1,2]*A[0,1])**(1/3)
+    
+    #grasses -> shrubs -> browsers -> grasses:a21a32a13
+    l3_4 = (A[1,0]*A[2,1]*A[0,2])**(1/3)
+    
+    #--------------------------------------------------
+    #4-link loops:
+    #grasses -> grazers -> shrubs -> browser -> grasses: a41a24a32a13
+    l4_1 = (A[3,0]*A[1,3]*A[2,1]*A[0,2])**(1/4)
+    
+    #grasses -> browsers -> shrubs -> grazers -> grasses: a31a23a42a14
+    l4_2 = (A[2,0]*A[1,2]*A[3,1]*A[0,3])**(1/4)
+    
+    
+    #combine values into list
+    results = [l2_1, -l2_2, -l2_3,-l2_4,-l2_5,l3_1,l3_2, l3_3,l3_4, l4_1,l4_2]
+   
+    return(results)
 
 #----------------------------------------------------------------------
 #Define equations and parameters
@@ -121,6 +172,7 @@ def get_all_Fks(points_df, f_values):
     nrows = points_df.shape[0]
     
     all_Fks = []
+    all_loops = []
     
     for f in f_values: #loop through the rows
         
@@ -133,12 +185,18 @@ def get_all_Fks(points_df, f_values):
         Jacobian= get_jacobian(diffs, eq)
     
         F1, F2, F3, F4 = total_feedback(Jacobian)
-    
+        
+        loop_list = find_savannah_loop_weights(Jacobian)
+        
         all_Fks.append([F1, F2, F3, F4])
+        all_loops.append(loop_list)
         
     #turn results into a dataframe
+    loop_names = ["a12a21", "a13a31","a14a41", "a23a32","a24a42","a21a42a14", "a41a24a12","a31a23a12", "a21a32a13","a41a24a32a13", "a31a23a42a14"]
     all_Fks = pd.DataFrame(all_Fks, columns = ["F1", "F2", "F3", "F4"])
-    results = pd.concat([points_df, all_Fks], axis = 1)   
+    loops = pd.DataFrame(all_loops, columns = loop_names)
+    
+    results = pd.concat([points_df, all_Fks, loops], axis = 1)   
     
     return results
 #---------------------------------------------------------------------------------
